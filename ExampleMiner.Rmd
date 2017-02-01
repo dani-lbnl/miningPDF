@@ -1,0 +1,113 @@
+---
+title: "Summarize texts"
+author: "Dani"
+date: "Feb 01 2017:"
+output:
+  html_document:
+    fig_caption: yes
+    number_sections: yes
+    theme: journal
+    toc: yes
+    toc_depth: 3
+---
+  
+
+```{r , echo=FALSE, warning=FALSE,message=FALSE,results='asis',fig.show='asis',fig.height=6}
+#```{r , echo=FALSE, results='asis'}
+
+require('grid') #deal with the plot crap
+require('tm') #text mining
+require('ggplot2')
+require('wordcloud')
+require('graph')
+#require('Rgraphviz')  
+require("RColorBrewer") 
+#require("SnowballC")
+
+# check the color palette name
+colorPalette = "Dark2"
+if(!colorPalette %in% rownames(brewer.pal.info)){
+  colors = colorPalette  
+}else{
+  colors = brewer.pal(8,colorPalette)
+  }
+  
+# Read raw input = pdf of cv ######## CHANGE PATH HERE
+path = "/Users/dani11/Dropbox/cnn_paper/"
+  
+#todo: create interface to read path and areas themes
+allFiles = list.files(path = path)
+candList = NULL
+for (i in length(allFiles)){
+  #Recover candidate names
+  a = strsplit(allFiles[i],'[.]'); #prior
+  b = strsplit(unlist(a)[1],'[ ]')
+  c = unlist(b)[1]
+  candidateName = c
+  candList[i]=candidateName
+  
+  #Builds path+filename
+  filename=paste(path,allFiles[i],sep='');
+  #Read pdf
+  tt <- readPDF(control = list(text = "-layout"))(elem=list(uri=filename),language="en",id="id1")
+  
+  # Processing text
+  myCVwords = c(month.name,month.abb,tolower(month.name),tolower(month.abb)) #todo: create a pre-processing step to define them, and have user=director of the committee to curate the list 
+  
+  myCorpus = Corpus(VectorSource(tt$content)) 
+  myCorpus = tm_map(myCorpus, content_transformer(tolower))
+  myCorpus = tm_map(myCorpus, removePunctuation)
+  myCorpus = tm_map(myCorpus, removeNumbers)
+  #bug with meta myCorpus = tm_map(myCorpus, stemDocument)
+  require("SnowballC") #contains stem
+  myCorpus <- tm_map(myCorpus, stemDocument)
+  # Quitamos los espacios que han salido con tanto retoque
+  myCorpus <- tm_map(myCorpus, stripWhitespace)
+
+  myCorpus = tm_map(myCorpus, removeWords, c(stopwords("english"), myCVwords))
+  #defining my document-term matrix
+  myDTM = TermDocumentMatrix(myCorpus, control = list(minWordLength = 5))
+  
+  m = as.matrix(myDTM)
+  
+  v = sort(rowSums(m), decreasing = TRUE)
+  #todo: save v so that you can cluster candidates at the end????
+  
+  #cat("image: ![](/Users/dani/Desktop/20150204_160353.jpg)")
+  
+  #Create TOC
+  grid.newpage()
+  cat("#", candidateName, "\n \n") #cat(candList[i])
+  cat('\n\n')
+  
+    set.seed(4362)
+    colors = brewer.pal(8, colorPalette)
+    wordcloud(names(v), v, min.freq = round(mean(v)),colors=colors,max.words=120) #more options at http://www.sthda.com/english/wiki/word-cloud-generator-in-r-one-killer-function-to-do-everything-you-need
+    cat('\n\n')
+  
+    barplot(v[1:20],las=2,col="lightblue",main ="Most frequent words",
+        ylab = "Word frequencies")
+    
+    cat('\n\n')
+  
+  #plot(myDTM, term=findFreqTerms(myDTM,lowfreq=5), corThreshold=0.12, weighting=T)
+  cat('\n\n')
+  
+  #**Extracted keywords,
+  cat('\n\n\n\n\n\n Extracted Keywords: \n\n\n\n')
+  maxKeyWords = 30
+  for(j in 1:(maxKeyWords-1))
+    cat(names(v)[j],", ")
+  cat(names(v)[maxKeyWords])
+  cat('\n\n')
+  
+  #Create frequency of double-tags
+  #ngrams to be explored
+  #Mine graph with relationship among "concepts" 
+  
+  
+  cat('\n\n\n\n') #this must be included to have TOC work
+  cat('------') #end of a candidate  
+  cat('\n\n')
+}
+```
