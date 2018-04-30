@@ -61,7 +61,6 @@ for (i in length(allFiles)){
   #bug with meta myCorpus = tm_map(myCorpus, stemDocument)
   require("SnowballC") #contains stem
   myCorpus <- tm_map(myCorpus, stemDocument)
-  # Quitamos los espacios que han salido con tanto retoque
   myCorpus <- tm_map(myCorpus, stripWhitespace)
 
   myCorpus = tm_map(myCorpus, removeWords, c(stopwords("english"), myCVwords))
